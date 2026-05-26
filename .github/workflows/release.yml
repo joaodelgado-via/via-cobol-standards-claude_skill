@@ -1,0 +1,88 @@
+name: Release skill
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SemVer version to release (e.g. 1.0.0 or 1.0.0-rc.1) — without leading v'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          semver_re='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
+          if [[ ! "$version" =~ $semver_re ]]; then
+            echo "::error::Version '$version' is not valid SemVer"
+            exit 1
+          fi
+          echo "version=$version"   >> "$GITHUB_OUTPUT"
+          echo "tag=v$version"      >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$([[ "$version" == *-* ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Stage skill contents
+        run: |
+          set -euo pipefail
+          mkdir -p build/via-cobol
+          cp SKILL.md build/via-cobol/
+          cp -r evals build/via-cobol/
+
+      - name: Package .skill
+        run: |
+          set -euo pipefail
+          cd build
+          zip -r ../via-cobol-${{ steps.ver.outputs.version }}.skill via-cobol
+          cd ..
+          ls -la via-cobol-${{ steps.ver.outputs.version }}.skill
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          IS_PRERELEASE: ${{ steps.ver.outputs.is_prerelease }}
+        run: |
+          set -euo pipefail
+          asset="via-cobol-${{ steps.ver.outputs.version }}.skill"
+          prerelease_flag=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if ! gh release view "$TAG" >/dev/null 2>&1; then
+              gh release create "$TAG" \
+                --title "$TAG" \
+                --target "$GITHUB_SHA" \
+                --generate-notes \
+                $prerelease_flag \
+                "$asset"
+            else
+              gh release upload "$TAG" "$asset" --clobber
+            fi
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --generate-notes \
+              $prerelease_flag \
+              "$asset"
+          fi
