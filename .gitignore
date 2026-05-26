@@ -1,0 +1,13 @@
+# Skill package (built artifact — don't commit, distribute separately)
+*.skill
+
+# Eval workspace outputs (generated during testing, not part of the skill itself)
+*-workspace/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

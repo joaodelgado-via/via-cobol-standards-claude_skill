@@ -1,0 +1,23 @@
+{
+  "skill_name": "via-cobol",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Write a batch COBOL program skeleton for the PS application (application code PS) that reads a sequential file of client records and updates their balance field in DB2 table PST01_CLIENTES. The program should follow all VIA standards.",
+      "expected_output": "A complete COBOL batch program with correct 8-char name (PSBnnnnn), three-paragraph structure (1000-INICIO, 2000-PROCESSA, 3000-FIM), WS-/SW-/CON- prefixes, AQCW0009 guards, mandatory AQCP0100/AQCP0002/AQCP0009 frame calls, per-resource DB2 status variable, single quotes, PERFORM…THRU…-EXIT pattern, debug write to VIAF0015.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Generate the online COBOL program PSI01002 for the PS application. This is a Query action (action code 02) for option 010. It should query a client record from DB2 using the client code received in VIAL0001.",
+      "expected_output": "COBOL online program named PSI01002 (8 chars), receives VIAL0001/VIAL0002, uses VIAL0002-SEM-ERROS guards, calls VIAP0003 for DB2 errors, debug via VIAP0016/VIAF0015, single quotes, PERFORM…THRU…-EXIT, one SQL per paragraph.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write the COBOL paragraph that calls module ARCL0110 from within a batch PS program. Include the full required pattern with the standard area, ON EXCEPTION handling, and pre/post call performs.",
+      "expected_output": "Paragraph following the exact module call pattern: ETCL0002 first in USING, ARCL0110-DATA second, ON EXCEPTION with SET ETCL0002-ERROS-ARQ, MOVE of error code, ETCP0003-STD-INIT before and ETCP0003-STD-END after, PERFORM…THRU…-EXIT wrapper.",
+      "files": []
+    }
+  ]
+}
